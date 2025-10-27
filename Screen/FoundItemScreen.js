@@ -57,7 +57,7 @@ export default function FoundItemScreen({ navigation }) {
       location: 'Kedai Sejati',
       time: '2 hari lalu',
       reward: '50.000',
-      image: 'https://i.ibb.co/Hf0RC0QS/Screenshot-20251023-145652-Gallery.jpg',
+      image: require('../assets/images/nemu/pod.jpg'),
       desc: 'Pod warna hitam dengan stiker kecil di sisi kiri.',
       kontak: '081234567890',
     },
@@ -67,7 +67,7 @@ export default function FoundItemScreen({ navigation }) {
       location: 'Mushola FDKI',
       time: '5 hari lalu',
       reward: '500.000',
-      image: 'https://i.ibb.co/SXZMXmdH/Screenshot-20251023-144525-Facebook.jpg',
+      image: require('../assets/images/nemu/iphone.png'),
       desc: 'iPhone 13 casing biru, retak kecil di pojok kanan atas.',
       kontak: '081987654321',
     },
@@ -77,7 +77,7 @@ export default function FoundItemScreen({ navigation }) {
       location: 'Mahad Qodim',
       time: '1 hari lalu',
       reward: '20.000',
-      image: 'https://i.ibb.co/n86bNDvP/e6a4deb5-3d90-42ff-be2e-22d03685f470.webp',
+      image: require('../assets/images/halaman/botol.png'),
       desc: 'Botol stainless dengan label "AquaSport" merah.',
       kontak: '082345678901',
     },
@@ -98,7 +98,7 @@ export default function FoundItemScreen({ navigation }) {
       ]}
       onPress={() => setSelectedItem(item)} // Klik card untuk buka modal
     >
-      <Image source={{ uri: item.image }} style={styles.cardImage} />
+      <Image source={item.image} style={styles.cardImage} />
       <View style={styles.cardBody}>
         <Text style={styles.cardTitle}>{item.title}</Text>
         <Text style={styles.cardSub}>📍 {item.location}</Text>
@@ -168,7 +168,7 @@ export default function FoundItemScreen({ navigation }) {
 
                 <ScrollView showsVerticalScrollIndicator={false}>
                   {/* GAMBAR BARANG */}
-                  <Image source={{ uri: selectedItem.image }} style={styles.modalImage} />
+                  <Image source={selectedItem.image} style={styles.modalImage} />
                   
                   {/* INFO BARANG */}
                   <Text style={styles.modalTitle}>{selectedItem.title}</Text>

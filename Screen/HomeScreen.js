@@ -1,3 +1,8 @@
+// ==========================================
+// HOME SCREEN
+// Screen utama aplikasi Lost & Found
+// ==========================================
+
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef, useState } from 'react';
@@ -18,12 +23,16 @@ import {
 const { width } = Dimensions.get('window');
 
 export default function HomeScreen({ navigation }) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeIndex, setActiveIndex] = useState(0);
-  const flatListRef = useRef(null);
-  const menuScrollRef = useRef(null);
-  const [autoScroll, setAutoScroll] = useState(false);
+  // STATE UNTUK SEARCH DAN MENU
+  const [searchQuery, setSearchQuery] = useState('');        // Teks pencarian
+  const [activeIndex, setActiveIndex] = useState(0);        // Index slider yang aktif
+  const flatListRef = useRef(null);                          // Ref untuk FlatList slider
+  const menuScrollRef = useRef(null);                        // Ref untuk scroll menu
+  const [autoScroll, setAutoScroll] = useState(false);      // Auto scroll menu aktif/tidak
 
+  // ==========================================
+  // ANIMASI LOADING SAAT SCREEN MUNCUL
+  // ==========================================
   // animasi fade
   const fade = (val) => useRef(new Animated.Value(val)).current;
   const fadeHeader = fade(0);
@@ -62,16 +71,21 @@ export default function HomeScreen({ navigation }) {
     ]).start();
   }, []);
 
+  // ==========================================
+  // GAMBAR SLIDER BANNER
+  // ==========================================
   const sliderImages = [
-    'https://i.ibb.co.com/dwcGGRX0/pexels-cottonbro-4065899.jpg',
-    'https://i.ibb.co.com/YYGtz7j/IMG-20250210-010916.jpg',
-    'https://i.ibb.co.com/LXjswggn/images-9.jpg',
+    require('../assets/images/halaman/cat.png'),
+    require('../assets/images/halaman/cat2.png'),
+    require('../assets/images/halaman/cat3.png'),
   ];
 
   // NOTE: removed auto-advance effect for slider — user will swipe manually
   // useEffect that auto advances slider has been intentionally removed.
 
-  // 🔥 DATA MENU CEPAT 🔥
+  // ==========================================
+  // MENU CEPAT (QUICK ACTIONS)
+  // ==========================================
   const quickActions = [
     { id: '1', title: 'Lapor Kehilangan', icon: 'alert-circle-outline' },
     { id: '2', title: 'Menemukan Barang', icon: 'search-outline' },
@@ -80,7 +94,10 @@ export default function HomeScreen({ navigation }) {
     { id: '5', title: 'Bantuan', icon: 'help-circle-outline' },
   ];
 
-  // 🔥 AUTO SCROLL MENU CEPAT (masih sama seperti sebelumya)
+  // ==========================================
+  // FUNGSI AUTO SCROLL MENU CEPAT
+  // Menu akan scroll otomatis bolak-balik
+  // ==========================================
   useEffect(() => {
     if (!autoScroll) return;
     let scrollValue = 0;
@@ -105,6 +122,9 @@ export default function HomeScreen({ navigation }) {
     return () => clearInterval(smoothScroll);
   }, [autoScroll]);
 
+  // ==========================================
+  // DATA BARANG DENGAN IMBALAN
+  // ==========================================
   const bountyItems = [
     {
       id: '1',
@@ -112,7 +132,7 @@ export default function HomeScreen({ navigation }) {
       location: 'Parkiran Gedung Utama',
       time: '10 menit yang lalu',
       reward: '25.000',
-      image: 'https://images.unsplash.com/photo-1616348436168-3d3f2a0e4d9a?w=800',
+      image: require('../assets/images/halaman/kunci.png'),
     },
     {
       id: '2',
@@ -120,7 +140,7 @@ export default function HomeScreen({ navigation }) {
       location: 'Kantin FST',
       time: '1 jam yang lalu',
       reward: '—',
-      image: 'https://images.unsplash.com/photo-1589578527966-3b4679a1a10b?w=800',
+      image: require('../assets/images/halaman/ktm.png'),
     },
     {
       id: '3',
@@ -128,7 +148,7 @@ export default function HomeScreen({ navigation }) {
       location: 'Perpustakaan',
       time: '3 jam yang lalu',
       reward: '10.000',
-      image: 'https://images.unsplash.com/photo-1585386959984-a41552231693?w=800',
+      image: require('../assets/images/halaman/headphone.png'),
     },
     {
       id: '4',
@@ -136,7 +156,7 @@ export default function HomeScreen({ navigation }) {
       location: 'Lapangan Fakultas',
       time: '1 hari lalu',
       reward: '15.000',
-      image: 'https://images.unsplash.com/photo-1582407947304-1c8a8eec6f4b?w=800',
+      image: require('../assets/images/halaman/botol.png'),
     },
     {
       id: '5',
@@ -144,10 +164,12 @@ export default function HomeScreen({ navigation }) {
       location: 'Lab Komputer',
       time: '2 hari lalu',
       reward: '30.000',
-      image: 'https://images.unsplash.com/photo-1617396900799-3c8c904be4a8?w=800',
+      image: require('../assets/images/halaman/flashdisk.png'),
     },
   ];
 
+  // FUNGSI UNTUK RENDER SETIAP CARD MENU CEPAT
+  // Setiap card bisa diklik untuk navigasi ke screen lain
   const renderQuickAction = ({ item }) => (
     <Pressable
       key={item.id}
@@ -156,6 +178,7 @@ export default function HomeScreen({ navigation }) {
         { opacity: pressed ? 0.8 : 1, transform: [{ scale: pressed ? 0.96 : 1 }] },
       ]}
       onPress={() => {
+        // NAVIGASI KE SCREEN YANG BERBEDA
         if (item.title === 'Menemukan Barang') {
           navigation.navigate('FoundItem');
         } else if (item.title === 'Lapor Kehilangan') {
@@ -181,7 +204,8 @@ export default function HomeScreen({ navigation }) {
     </Pressable>
   );
 
-  // gunakan onMomentumScrollEnd untuk dapat index yang akurat setelah swipe selesai
+  // FUNGSI UNTUK CEK SLIDER YANG AKTIF
+  // Saat user swipe slider, hitung slide mana yang aktif
   const onSliderMomentumEnd = (event) => {
     const offsetX = event.nativeEvent.contentOffset.x;
     // setiap item (dengan marginHorizontal width*0.05 di kiri dan kanan) total mengisi 100% width
@@ -193,7 +217,7 @@ export default function HomeScreen({ navigation }) {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#C9A13B" />
 
-      {/* HEADER */}
+      {/* HEADER - LOGO DAN SEARCH BAR */}
       <Animated.View style={[styles.header, { opacity: fadeHeader, transform: [{ translateY: slideHeader }] }]}>
         <LinearGradient
           colors={['#B38E2F', '#006B3F']}
@@ -219,7 +243,7 @@ export default function HomeScreen({ navigation }) {
       </Animated.View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* GREETING */}
+        {/* SALAM PEMBUKA */}
         <View style={styles.greetingContainer}>
           <Text style={styles.greeting}>Halo, Mahasiswa UIN SSC👋</Text>
           <Text style={styles.welcomeText}>
@@ -227,7 +251,7 @@ export default function HomeScreen({ navigation }) {
           </Text>
         </View>
 
-        {/* SLIDER */}
+        {/* SLIDER BANNER - GAMBAR PROMOSI */}
         <Animated.View style={{ opacity: fadeBanner, transform: [{ translateX: slideBanner }] }}>
           <FlatList
             data={sliderImages}
@@ -236,11 +260,11 @@ export default function HomeScreen({ navigation }) {
             pagingEnabled
             showsHorizontalScrollIndicator={false}
             onMomentumScrollEnd={onSliderMomentumEnd}
-            renderItem={({ item }) => <Image source={{ uri: item }} style={styles.sliderImage} />}
+            renderItem={({ item }) => <Image source={item} style={styles.sliderImage} />}
             keyExtractor={(_, i) => i.toString()}
           />
 
-          {/* pagination dots */}
+          {/* INDIKATOR SLIDER (DOTS) */}
           <View style={styles.dotsContainer}>
             {sliderImages.map((_, i) => (
               <View
@@ -254,7 +278,7 @@ export default function HomeScreen({ navigation }) {
           </View>
         </Animated.View>
 
-        {/* 🔥 MENU CEPAT OTOMATIS 🔥 */}
+        {/* MENU CEPAT - NAVIGASI KE SCREEN LAINNYA */}
         <Animated.View style={{ opacity: fadeMenu, transform: [{ translateX: slideMenu }] }}>
           <Text style={styles.sectionTitle}>Menu Cepat</Text>
           <ScrollView
@@ -271,7 +295,7 @@ export default function HomeScreen({ navigation }) {
           </ScrollView>
         </Animated.View>
 
-        {/* STATISTIK */}
+        {/* STATISTIK LAPORAN - TAMPILKAN DATA SUMMARY */}
         <Animated.View style={{ opacity: fadeStats, transform: [{ translateY: slideStats }] }}>
           <Text style={styles.sectionTitle}>Statistik Laporan</Text>
           <Text style={styles.statsNote}>📊 Data diperbarui setiap 24 jam</Text>
@@ -295,7 +319,7 @@ export default function HomeScreen({ navigation }) {
           </View>
         </Animated.View>
 
-        {/* BARANG IMBALAN */}
+        {/* DAFTAR BARANG DENGAN IMBALAN TERUSINGGI */}
         <Animated.View style={{ opacity: fadeBounty, transform: [{ translateY: slideBounty }] }}>
           <Text style={styles.sectionTitle}>Barang dengan Imbalan</Text>
           {bountyItems.map((item) => (
@@ -306,7 +330,7 @@ export default function HomeScreen({ navigation }) {
                 { opacity: pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
               ]}
             >
-              <Image source={{ uri: item.image }} style={styles.bountyImage} />
+              <Image source={item.image} style={styles.bountyImage} />
               <View style={styles.bountyInfo}>
                 <Text style={styles.bountyTitle}>{item.title}</Text>
                 <Text style={styles.bountySub}>📍 {item.location}</Text>

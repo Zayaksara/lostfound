@@ -29,6 +29,7 @@ export default function DataItemScreen() {
   // STATE UNTUK SEARCH DAN DATA
   const [searchQuery, setSearchQuery] = useState('');  // Teks pencarian
   const [reports, setReports] = useState([]);          // Array data laporan
+  const [failedImages, setFailedImages] = useState(new Set()); // Track gambar yang gagal load
 
   // FUNGSI UNTUK LOAD DATA DARI ASYNCSTORAGE
   const loadReports = async () => {
@@ -95,9 +96,24 @@ export default function DataItemScreen() {
 
   // FUNGSI UNTUK RENDER SETIAP ITEM DI LIST
   const renderItem = ({ item }) => {
-    const imageSource = item.imageData 
-      ? { uri: item.imageData }
-      : { uri: 'https://via.placeholder.com/70?text=No+Image' };
+    // CEK JENIS DATA GAMBAR (BASE64 UNTUK MOBILE ATAU URL UNTUK WEB)
+    let imageSource;
+    if (item.imageData && !failedImages.has(item.id)) {
+      // Deteksi apakah data base64 (data:image/...) atau URL biasa (blob:http://...)
+      if (item.imageData.startsWith('data:image/')) {
+        // MOBILE: data URI base64
+        imageSource = { uri: item.imageData };
+      } else if (item.imageData.startsWith('blob:') || item.imageData.startsWith('http://') || item.imageData.startsWith('https://')) {
+        // WEB: URL blob atau http/https
+        imageSource = { uri: item.imageData };
+      } else {
+        // Format tidak dikenali, pakai placeholder
+        imageSource = { uri: 'https://via.placeholder.com/70?text=No+Image' };
+      }
+    } else {
+      // Tidak ada gambar atau gambar gagal load
+      imageSource = { uri: 'https://via.placeholder.com/70?text=No+Image' };
+    }
     
     return (
       <Pressable
@@ -107,7 +123,15 @@ export default function DataItemScreen() {
           { opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
         ]}
       >
-        <Image source={imageSource} style={styles.cardImage} />
+        <Image 
+          source={imageSource} 
+          style={styles.cardImage}
+          onError={() => {
+            // Jika gambar gagal load, tambahkan ke failedImages
+            setFailedImages(prev => new Set(prev).add(item.id));
+            console.log('Gambar gagal load untuk item:', item.id);
+          }}
+        />
         <View style={styles.cardBody}>
           <Text style={styles.cardTitle}>{item.namaBarang}</Text>
           <Text style={styles.cardSub}>📍 {item.lokasi}</Text>
