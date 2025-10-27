@@ -1,6 +1,11 @@
-// LaporItemScreen.js
+// ==========================================
+// LAPOR ITEM SCREEN
+// Screen untuk membuat laporan barang hilang
+// ==========================================
+
 import { Ionicons } from '@expo/vector-icons';
-import * as FileSystem from 'expo-file-system';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
@@ -20,13 +25,15 @@ import {
 const { width } = Dimensions.get('window');
 
 export default function LaporItemScreen() {
-  const [namaBarang, setNamaBarang] = useState('');
-  const [lokasi, setLokasi] = useState('');
-  const [deskripsi, setDeskripsi] = useState('');
-  const [kontak, setKontak] = useState('');
-  const [imageUri, setImageUri] = useState(null); // path di storage app
+  // STATE UNTUK SIMPAN DATA FORM
+  const [namaBarang, setNamaBarang] = useState('');        // Nama barang yang hilang
+  const [lokasi, setLokasi] = useState('');                 // Lokasi kehilangan
+  const [deskripsi, setDeskripsi] = useState('');           // Deskripsi barang
+  const [kontak, setKontak] = useState('');                 // Nomor WA/Email
+  const [imbalan, setImbalan] = useState('');              // Imbalan (opsional)
+  const [imageUri, setImageUri] = useState(null);           // Path gambar
 
-  // Minta izin saat komponen mount (opsional — juga diminta saat pick)
+  // MINTA IZIN AKSES GALERI SAAT PERTAMA KALI BUKA
   useEffect(() => {
     (async () => {
       try {
@@ -37,9 +44,12 @@ export default function LaporItemScreen() {
     })();
   }, []);
 
-  // PICK IMAGE from gallery & copy to app folder DocumentDirectory/img/
+  // ==========================================
+  // FUNGSI UNTUK PILIH DAN SIMPAN GAMBAR
+  // ==========================================
   const pickImageAndSave = async () => {
     try {
+      // Cek izin akses galeri dulu
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (perm.status !== 'granted') {
         Alert.alert('Izin dibutuhkan', 'Aplikasi butuh izin untuk mengakses galeri.');
@@ -48,7 +58,7 @@ export default function LaporItemScreen() {
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        quality: 1,
+        quality: 0.5, // Kompres ke 50% untuk menghemat storage
         allowsEditing: true,
       });
 
@@ -57,82 +67,141 @@ export default function LaporItemScreen() {
       const asset = result.assets[0];
       const sourceUri = asset.uri;
 
-      // buat folder img di DocumentDirectory jika belum ada
-      const dir = FileSystem.documentDirectory + 'img/';
-      const dirInfo = await FileSystem.getInfoAsync(dir);
-      if (!dirInfo.exists) {
-        await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
-      }
+      // CEK APLIKASI JALAN DI WEB ATAU MOBILE?
+      const isWeb = typeof window !== 'undefined';
+      
+      if (isWeb) {
+        // ========== DI WEB / LAPTOP ==========
+        // Langsung pakai URL gambar, simpan ke AsyncStorage
+        setImageUri(sourceUri);
+        Alert.alert('Sukses', 'Gambar tersimpan.');
+      } else {
+        // ========== DI MOBILE ==========
+        // 1. Buat folder img/ di penyimpanan aplikasi
+        const dir = FileSystem.documentDirectory + 'img/';
+        const dirInfo = await FileSystem.getInfoAsync(dir);
+        if (!dirInfo.exists) {
+          await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
+        }
 
-      const fileExt = sourceUri.split('.').pop().split('?')[0] || 'jpg';
-      const fileName = `img_${Date.now()}.${fileExt}`;
-      const dest = dir + fileName;
+        // 2. Copy gambar dari galeri ke folder aplikasi
+        const fileExt = sourceUri.split('.').pop().split('?')[0] || 'jpg';
+        const fileName = `img_${Date.now()}.${fileExt}`;
+        const dest = dir + fileName;
 
-      // coba copy, jika gagal coba downloadAsync (fallback)
-      try {
-        await FileSystem.copyAsync({ from: sourceUri, to: dest });
-      } catch (errCopy) {
-        // fallback untuk beberapa URI (content://) — coba downloadAsync
         try {
-          await FileSystem.downloadAsync(sourceUri, dest);
-        } catch (errDownload) {
-          console.log('Copy and download both failed:', errCopy, errDownload);
-          throw new Error('Gagal menyimpan gambar ke storage aplikasi.');
+          await FileSystem.copyAsync({ from: sourceUri, to: dest });
+        } catch (errCopy) {
+          try {
+            await FileSystem.downloadAsync(sourceUri, dest);
+          } catch (errDownload) {
+            console.log('Copy and download both failed:', errCopy, errDownload);
+            throw new Error('Gagal menyimpan gambar.');
+          }
+        }
+
+        // 3. Convert gambar jadi base64 supaya bisa ditampilkan
+        const base64Image = await FileSystem.readAsStringAsync(dest, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        
+        // 4. Hapus file fisik setelah convert (hemat storage)
+        try {
+          await FileSystem.deleteAsync(dest, { idempotent: true });
+        } catch (e) {
+          console.log('Hapus file fisik:', e);
+        }
+        
+        // 5. Set format gambar (jpg/png)
+        let mimeType = 'image/jpeg';
+        const ext = fileExt.toLowerCase();
+        if (ext === 'png') mimeType = 'image/png';
+        
+        // 6. Simpan sebagai data URI (format yang bisa ditampilkan)
+        const imageDataUri = `data:${mimeType};base64,${base64Image}`;
+        setImageUri(imageDataUri);
+        
+        // 7. Cek ukuran file
+        const sizeInMB = (base64Image.length * 3) / 4 / (1024 * 1024);
+        if (sizeInMB > 2) {
+          Alert.alert('⚠️ Gambar Besar', `Ukuran gambar: ${sizeInMB.toFixed(2)} MB. Disarankan gunakan gambar yang lebih kecil.`);
+        } else {
+          Alert.alert('Sukses', 'Gambar tersimpan.');
         }
       }
-
-      setImageUri(dest);
-      Alert.alert('Sukses', 'Gambar tersimpan di folder aplikasi.');
     } catch (err) {
       console.log(err);
       Alert.alert('Error', err.message || 'Terjadi kesalahan saat memilih gambar.');
     }
   };
 
+  // FUNGSI HAPUS GAMBAR YANG SUDAH DIPILIH
   const removeImage = async () => {
     if (!imageUri) return;
-    try {
-      const info = await FileSystem.getInfoAsync(imageUri);
-      if (info.exists) {
-        await FileSystem.deleteAsync(imageUri, { idempotent: true });
-      }
-    } catch (e) {
-      console.log('hapus gambar error', e);
-    } finally {
-      setImageUri(null);
-    }
+    // File fisik sudah dihapus setelah base64 conversion, tinggal reset state
+    setImageUri(null);
   };
 
+  // ==========================================
+  // FUNGSI UNTUK KIRIM LAPORAN
+  // ==========================================
   const handleSubmit = async () => {
     if (!namaBarang || !lokasi || !deskripsi || !kontak) {
       Alert.alert('⚠️ Peringatan', 'Harap isi semua data terlebih dahulu.');
       return;
-  }
+    }
 
-    // contoh payload untuk disimpan / diupload
+    // BUAT DATA UNTUK DISIMPAN
     const payload = {
-      namaBarang,
-      lokasi,
-      deskripsi,
-      kontak,
-      imagePath: imageUri, // path di storage aplikasi
+      id: `report_${Date.now()}`,              // ID unik untuk setiap laporan
+      namaBarang,                              // Nama barang hilang
+      lokasi,                                  // Lokasi kehilangan
+      deskripsi,                               // Deskripsi barang
+      kontak,                                  // Nomor WA/Email
+      imbalan: imbalan || 'Tidak ada',        // Imbalan yang ditawarkan
+      imageData: imageUri,                     // Gambar barang (base64)
+      date: new Date().toLocaleDateString('id-ID', { 
+        day: '2-digit', 
+        month: 'short', 
+        year: 'numeric' 
+      }),                                      // Tanggal laporan
+      status: 'Menunggu Verifikasi',           // Status default
     };
 
-    // TODO: kirim payload ke server / simpan ke local DB sesuai kebutuhan
-    console.log('mengirim payload:', payload);
+    try {
+      // 1. Ambil data laporan yang sudah ada
+      const existingData = await AsyncStorage.getItem('reports');
+      const reports = existingData ? JSON.parse(existingData) : [];
+      
+      // 2. Tambahkan laporan baru di paling atas
+      reports.unshift(payload);
+      
+      // 3. Simpan ulang ke AsyncStorage
+      await AsyncStorage.setItem('reports', JSON.stringify(reports));
+      
+      console.log('Laporan tersimpan:', payload);
 
-    Alert.alert(
-      '✅ Laporan Dikirim',
-      `Barang "${namaBarang}" berhasil dilaporkan hilang.\n\nKami akan menampilkan laporanmu di daftar barang hilang.`
-    );
+      // 4. Tampilkan notifikasi sukses
+      Alert.alert(
+        '✅ Laporan Dikirim',
+        `Barang "${namaBarang}" berhasil dilaporkan hilang.\n\nKami akan menampilkan laporanmu di daftar barang hilang.`
+      );
 
-    setNamaBarang('');
-    setLokasi('');
-    setDeskripsi('');
-    setKontak('');
-    setImageUri(null);
+      setNamaBarang('');
+      setLokasi('');
+      setDeskripsi('');
+      setKontak('');
+      setImbalan('');
+      setImageUri(null);
+    } catch (error) {
+      console.log('Error saving report:', error);
+      Alert.alert('Error', 'Gagal menyimpan laporan.');
+    }
   };
 
+  // ==========================================
+  // RENDER UI FORM
+  // ==========================================
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#C9A13B" />
@@ -149,8 +218,9 @@ export default function LaporItemScreen() {
         </Text>
       </LinearGradient>
 
+      {/* FORM INPUT DATA */}
       <ScrollView showsVerticalScrollIndicator={false} style={styles.form}>
-        {/* Nama */}
+        {/* NAMA BARANG */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Nama Barang</Text>
           <View style={styles.inputBox}>
@@ -165,7 +235,7 @@ export default function LaporItemScreen() {
           </View>
         </View>
 
-        {/* Lokasi */}
+        {/* LOKASI KEHILANGAN */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Lokasi Kehilangan</Text>
           <View style={styles.inputBox}>
@@ -180,7 +250,7 @@ export default function LaporItemScreen() {
           </View>
         </View>
 
-        {/* Deskripsi */}
+        {/* DESKRIPSI BARANG */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Deskripsi Barang</Text>
           <View style={styles.textAreaBox}>
@@ -197,7 +267,7 @@ export default function LaporItemScreen() {
           </View>
         </View>
 
-        {/* Kontak */}
+        {/* KONTAK (WA/EMAIL) */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Kontak yang Bisa Dihubungi</Text>
           <View style={styles.inputBox}>
@@ -213,7 +283,23 @@ export default function LaporItemScreen() {
           </View>
         </View>
 
-        {/* IMAGE PICKER */}
+        {/* IMBALAN (OPSIONAL) */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Imbalan (opsional)</Text>
+          <View style={styles.inputBox}>
+            <Ionicons name="cash-outline" size={18} color="#777" />
+            <TextInput
+              style={styles.input}
+              placeholder="Contoh: Rp 50.000 atau Tidak ada"
+              placeholderTextColor="#999"
+              keyboardType="default"
+              value={imbalan}
+              onChangeText={setImbalan}
+            />
+          </View>
+        </View>
+
+        {/* GAMBAR BARANG (FOTO) */}
         <View style={[styles.inputGroup, { marginBottom: 6 }]}>
           <Text style={styles.label}>Foto / Bukti (opsional)</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -252,6 +338,7 @@ export default function LaporItemScreen() {
           )}
         </View>
 
+        {/* TOMBOL KIRIM LAPORAN */}
         <Pressable
           style={({ pressed }) => [
             styles.submitBtn,

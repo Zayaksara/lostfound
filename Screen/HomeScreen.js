@@ -22,7 +22,7 @@ export default function HomeScreen({ navigation }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef(null);
   const menuScrollRef = useRef(null);
-  const [autoScroll, setAutoScroll] = useState(true);
+  const [autoScroll, setAutoScroll] = useState(false);
 
   // animasi fade
   const fade = (val) => useRef(new Animated.Value(val)).current;

@@ -1,91 +1,137 @@
-import React, { useState } from 'react';
+// ==========================================
+// DATA LAPORAN ITEM SCREEN
+// Screen untuk lihat semua laporan kehilangan
+// ==========================================
+
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
+import * as FileSystem from 'expo-file-system/legacy';
+import { LinearGradient } from 'expo-linear-gradient';
+import React, { useCallback, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
+  Alert,
+  Dimensions,
   FlatList,
   Image,
-  TextInput,
   Pressable,
-  StatusBar,
-  Dimensions,
   ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
 
 export default function DataItemScreen() {
-  const [searchQuery, setSearchQuery] = useState('');
+  // STATE UNTUK SEARCH DAN DATA
+  const [searchQuery, setSearchQuery] = useState('');  // Teks pencarian
+  const [reports, setReports] = useState([]);          // Array data laporan
 
-  // 📋 Contoh data laporan kehilangan
-  const reports = [
-    {
-      id: '1',
-      title: 'Dompet Coklat',
-      location: 'Kantin Fakultas',
-      date: '20 Okt 2025',
-      status: 'Diproses',
-      image: 'https://i.ibb.co/Fw1Xf9f/dompet.jpg',
-      desc: 'Dompet warna coklat berisi KTP dan kartu mahasiswa.',
-    },
-    {
-      id: '2',
-      title: 'Kunci Motor',
-      location: 'Parkiran Utama',
-      date: '18 Okt 2025',
-      status: 'Selesai',
-      image: 'https://i.ibb.co/vcwJ0Pb/key.jpg',
-      desc: 'Kunci motor Honda Beat dengan gantungan bulat biru.',
-    },
-    {
-      id: '3',
-      title: 'Tas Hitam',
-      location: 'Ruang B203',
-      date: '17 Okt 2025',
-      status: 'Menunggu Verifikasi',
-      image: 'https://i.ibb.co/RDJy1S1/bag.jpg',
-      desc: 'Tas ransel warna hitam merk Eiger berisi buku dan charger.',
-    },
-  ];
+  // FUNGSI UNTUK LOAD DATA DARI ASYNCSTORAGE
+  const loadReports = async () => {
+    try {
+      const data = await AsyncStorage.getItem('reports');
+      if (data) {
+        setReports(JSON.parse(data));
+      }
+    } catch (error) {
+      console.log('Error loading reports:', error);
+    }
+  };
 
+  // LOAD DATA SETIAP KALI SCREEN DIBUKA
+  useFocusEffect(
+    useCallback(() => {
+      loadReports();
+    }, [])
+  );
+
+  // ==========================================
+  // FUNGSI HAPUS SEMUA DATA (CLEAR CACHE)
+  // Untuk menghemat storage di mobile
+  // ==========================================
+  const handleClearAll = () => {
+    Alert.alert(
+      '⚠️ Hapus Semua Data',
+      'Apakah Anda yakin ingin menghapus semua laporan dan gambar? Tindakan ini tidak dapat dibatalkan.',
+      [
+        { text: 'Batal', style: 'cancel' },
+        {
+          text: 'Hapus',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Hapus AsyncStorage
+              await AsyncStorage.removeItem('reports');
+              
+              // Hapus semua gambar di folder img/
+              const imgDir = FileSystem.documentDirectory + 'img/';
+              const dirInfo = await FileSystem.getInfoAsync(imgDir);
+              if (dirInfo.exists) {
+                await FileSystem.deleteAsync(imgDir, { idempotent: true });
+                console.log('Folder img dihapus');
+              }
+              
+              setReports([]);
+              Alert.alert('✅ Sukses', 'Semua data dan gambar berhasil dihapus.');
+            } catch (error) {
+              console.log('Error clearing data:', error);
+              Alert.alert('Error', 'Gagal menghapus data.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // FILTER LAPORAN BERDASARKAN SEARCH QUERY
   const filtered = reports.filter((item) =>
-    item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.location.toLowerCase().includes(searchQuery.toLowerCase())
+    item.namaBarang?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.lokasi?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const renderItem = ({ item }) => (
-    <Pressable
-      key={item.id}
-      style={({ pressed }) => [
-        styles.card,
-        { opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
-      ]}
-    >
-      <Image source={{ uri: item.image }} style={styles.cardImage} />
-      <View style={styles.cardBody}>
-        <Text style={styles.cardTitle}>{item.title}</Text>
-        <Text style={styles.cardSub}>📍 {item.location}</Text>
-        <Text style={styles.cardSub}>📅 {item.date}</Text>
-        <Text
-          style={[
-            styles.cardStatus,
-            {
-              color:
-                item.status === 'Selesai'
-                  ? '#2E7D32'
-                  : item.status === 'Diproses'
-                  ? '#C9A13B'
-                  : '#B12E2E',
-            },
-          ]}
-        >
-          🔖 {item.status}
-        </Text>
-      </View>
-    </Pressable>
-  );
+  // FUNGSI UNTUK RENDER SETIAP ITEM DI LIST
+  const renderItem = ({ item }) => {
+    const imageSource = item.imageData 
+      ? { uri: item.imageData }
+      : { uri: 'https://via.placeholder.com/70?text=No+Image' };
+    
+    return (
+      <Pressable
+        key={item.id}
+        style={({ pressed }) => [
+          styles.card,
+          { opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
+        ]}
+      >
+        <Image source={imageSource} style={styles.cardImage} />
+        <View style={styles.cardBody}>
+          <Text style={styles.cardTitle}>{item.namaBarang}</Text>
+          <Text style={styles.cardSub}>📍 {item.lokasi}</Text>
+          <Text style={styles.cardSub}>📅 {item.date}</Text>
+          <Text style={styles.cardSub}>💰 {item.imbalan}</Text>
+          <Text
+            style={[
+              styles.cardStatus,
+              {
+                color:
+                  item.status === 'Selesai'
+                    ? '#2E7D32'
+                    : item.status === 'Diproses'
+                    ? '#C9A13B'
+                    : '#B12E2E',
+              },
+            ]}
+          >
+            🔖 {item.status}
+          </Text>
+        </View>
+      </Pressable>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -98,7 +144,14 @@ export default function DataItemScreen() {
         end={{ x: 1, y: 1 }}
         style={styles.header}
       >
-        <Text style={styles.headerTitle}>Data Laporan Kehilangan</Text>
+        <View style={styles.headerTop}>
+          <Text style={styles.headerTitle}>Data Laporan Kehilangan</Text>
+          {reports.length > 0 && (
+            <Pressable onPress={handleClearAll} style={styles.clearButton}>
+              <Ionicons name="trash-outline" size={20} color="#fff" />
+            </Pressable>
+          )}
+        </View>
         <View style={styles.searchBox}>
           <Ionicons name="search-outline" size={18} color="#777" />
           <TextInput
@@ -111,7 +164,7 @@ export default function DataItemScreen() {
         </View>
       </LinearGradient>
 
-      {/* LIST DATA */}
+      {/* LIST LAPORAN YANG TERSIMPAN */}
       <ScrollView showsVerticalScrollIndicator={false}>
         {filtered.length > 0 ? (
           <FlatList
@@ -122,7 +175,11 @@ export default function DataItemScreen() {
             contentContainerStyle={{ paddingBottom: 20 }}
           />
         ) : (
-          <Text style={styles.noResult}>Belum ada laporan kehilangan.</Text>
+          <View style={styles.emptyContainer}>
+            <Ionicons name="document-outline" size={64} color="#ccc" />
+            <Text style={styles.noResult}>Belum ada laporan kehilangan.</Text>
+            <Text style={styles.emptySubtitle}>Klik "Lapor Kehilangan" untuk membuat laporan baru</Text>
+          </View>
         )}
       </ScrollView>
     </View>
@@ -141,12 +198,24 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 24,
     elevation: 8,
   },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   headerTitle: {
     fontSize: width < 360 ? 20 : 24,
     fontWeight: '900',
     color: '#fff',
     letterSpacing: 0.5,
-    marginBottom: 12,
+    flex: 1,
+  },
+  clearButton: {
+    padding: 8,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 8,
+    marginLeft: 10,
   },
   searchBox: {
     flexDirection: 'row',
@@ -183,8 +252,20 @@ const styles = StyleSheet.create({
 
   noResult: {
     textAlign: 'center',
-    marginTop: 50,
+    marginTop: 20,
     color: '#888',
-    fontSize: 14,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  emptySubtitle: {
+    textAlign: 'center',
+    marginTop: 8,
+    color: '#aaa',
+    fontSize: 13,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    marginTop: 80,
+    paddingHorizontal: 20,
   },
 });
