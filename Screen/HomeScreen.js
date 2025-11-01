@@ -193,7 +193,7 @@ export default function HomeScreen({ navigation }) {
       }}
     >
       <LinearGradient
-        colors={['#D4AF37', '#2E4A0D']}
+        colors={['#7a5c00', '#b8860b', '#d4af37']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.iconBox}
@@ -220,7 +220,7 @@ export default function HomeScreen({ navigation }) {
       {/* HEADER - LOGO DAN SEARCH BAR */}
       <Animated.View style={[styles.header, { opacity: fadeHeader, transform: [{ translateY: slideHeader }] }]}>
         <LinearGradient
-          colors={['#B38E2F', '#006B3F']}
+          colors={['#b88400ff', '#006B3F']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.headerGradient}
@@ -306,7 +306,7 @@ export default function HomeScreen({ navigation }) {
             ].map((item, i) => (
               <LinearGradient
                 key={i}
-                colors={['#FFC107', '#388E3C']}
+                colors={['#8f9900ff', '#005813ff']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.statCard}
