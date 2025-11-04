@@ -69,7 +69,7 @@ export default function FoundItemScreen({ navigation }) {
       reward: '500.000',
       image: require('../assets/images/nemu/iphone.png'),
       desc: 'iPhone 13 casing biru, retak kecil di pojok kanan atas.',
-      kontak: '081987654321',
+      kontak: '+6281291585155',
     },
     {
       id: '3',
