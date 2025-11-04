@@ -1,4 +1,4 @@
-import React from 'react'; u
+import React from 'react'; 
 import {
   View,
   Text,
