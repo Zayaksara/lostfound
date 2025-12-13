@@ -1,16 +1,14 @@
-import React from 'react'; 
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import React from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
   FlatList,
   StatusBar,
-  Dimensions,
+  Text,
+  View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 
-const { width } = Dimensions.get('window');
+import styles from '../styles/NotifikasiItemStyles'; // ⬅ STYLE TERPISAH
 
 export default function NotifikasiItemScreen() {
   const notifications = [
@@ -69,6 +67,7 @@ export default function NotifikasiItemScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#C9A13B" />
+
       <LinearGradient
         colors={['#B38E2F', '#006B3F']}
         start={{ x: 0, y: 0 }}
@@ -87,41 +86,3 @@ export default function NotifikasiItemScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAF5' },
-
-  header: {
-    paddingTop: 50,
-    paddingBottom: 24,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    elevation: 8,
-  },
-  headerTitle: {
-    fontSize: width < 360 ? 20 : 24,
-    fontWeight: '900',
-    color: '#fff',
-    letterSpacing: 0.5,
-  },
-
-  card: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    marginHorizontal: 20,
-    marginVertical: 10,
-    borderRadius: 14,
-    padding: 12,
-    elevation: 3,
-  },
-  iconContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  textContainer: { flex: 1 },
-  title: { fontSize: 15, fontWeight: '700', color: '#222' },
-  desc: { fontSize: 13, color: '#555', marginTop: 4 },
-  time: { fontSize: 11, color: '#888', marginTop: 6 },
-});
